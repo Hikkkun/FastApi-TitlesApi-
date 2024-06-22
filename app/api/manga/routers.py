@@ -1,10 +1,12 @@
 # app/api/manga/routers.py
 import json
 from fastapi import APIRouter, HTTPException
+from fastapi.responses import JSONResponse
+from fastapi.encoders import jsonable_encoder
 
 from app.utils.redis import redis_client
-from .hendlers.senkuro_handler import title_info, title_search, title_chapters, title_images
-# from .remanga_handler import remanga_get_title, remanga_searche, remanga_get_chapters
+from .handlers.senkuro_handler import title_info, title_search, title_chapters, title_images
+from app.api.manga.schemas import MangaInfo, MangaSearch, MangaChapters, MangaImages
 
 router = APIRouter()
 
@@ -15,43 +17,83 @@ site_handlers = {
         "title_chapters": title_chapters,
         "title_images": title_images,
     },
-    # "remanga": {
-    #     "get_title": remanga_get_title,
-    #     "search": remanga_searche,
-    #     "get_chapters": remanga_get_chapters,
-    # },
 }
 
-@router.get("/{site}/title/{slug}")
+@router.get("/api/manga/{site_name}/title/{slug}", response_model=MangaInfo)
+@router.get("/api/manga/{site_name}/title/{slug}/{any}", response_model=MangaInfo)
+@router.get("/manga/{slug}", response_model=MangaInfo)
+@router.get("/manga/{slug}/{any}", response_model=MangaInfo)
+@router.get("/api/manga/{slug}", response_model=MangaInfo)
+@router.get("/api/manga/{slug}/{any}", response_model=MangaInfo)
 async def title_info(site: str, slug: str):
-    cached_value = redis_client.get(slug)
+    cached_value = redis_client.get(f"site:{site}, slug:{slug}")
     if cached_value:
-        return json.loads(cached_value)
+        return JSONResponse(content=json.loads(cached_value))
     
     if site in site_handlers:
-        result = await site_handlers[site]["title_info"](slug)
-        redis_client.set(slug, result.json(), ex=300)  # Кэширование на 5 минут
-        return result
-    
+        result = (await site_handlers[site]["title_info"](slug)).dict()
+        redis_client.set(f"site:{site}, slug:{slug}", json.dumps(result), ex=43200)
+        return JSONResponse(content=result)
+
     raise HTTPException(status_code=404, detail="Site not found")
 
-@router.get("/{site}/search/")
-async def search(site: str, text: str):
-    cached_value = redis_client.get(text)
+@router.get("/manga/{site}/search/", response_model=MangaSearch)
+async def search_title(site: str, text: str):
+    cached_value = redis_client.get(f"site:{site}, text:{text}")
     if cached_value:
-        return json.loads(cached_value)
+        return JSONResponse(content=json.loads(cached_value))
     
     if site in site_handlers:
         result = await site_handlers[site]["title_search"](text)
-        redis_client.set(text, result.json(), ex=300)  # Кэширование на 5 минут
-        return result
+        redis_client.set(f"site:{site}, text:{text}", json.dumps(result), ex=43200)
+        return JSONResponse(content=jsonable_encoder(result))
     
     raise HTTPException(status_code=404, detail="Site not found")
 
-# @router.get("/{site}/chapters/{slug}")
-# async def get_chapters(site: str, slug: str):
-#     if site in site_handlers:
-#         return site_handlers[site]["get_chapters"](slug)
-#     raise HTTPException(status_code=404, detail="Site not found")
+@router.get("/{site}/chapters/{slug}", response_model=MangaChapters)
+async def get_chapters(site: str, slug: str):
+    cached_value = redis_client.get(f"site:{site}, slug:{slug}")
+    if cached_value:
+        data = json.loads(cached_value)
+        
+    else:
+        if site in site_handlers:
+            data = (await site_handlers[site]["title_info"](slug)).dict()
+            redis_client.set(f"site:{site}, slug:{slug}", json.dumps(data), ex=43200)
+        else:
+            raise HTTPException(status_code=404, detail="Site not found")
+    
+    if site in site_handlers:
+        result = await site_handlers[site]["title_chapters"](data)
+        return JSONResponse(content=jsonable_encoder(result))
+    
+    raise HTTPException(status_code=404, detail="Site not found")
 
-# Ensure the router is registered in the FastAPI application in main.py
+
+@router.get("/api/manga/{site_name}/{slug}/{chapterId}", response_model=MangaImages)
+@router.get("/api/manga/{site_name}/images/{slug}/{chapterId}", response_model=MangaImages)
+async def get_images(site: str, slug: str, chapter_id: str):
+    # Проверка кэша для изображения
+    cached_value = redis_client.get(f"site:{site}, chapter_id:{chapter_id}")
+    if cached_value:
+        return JSONResponse(content=json.loads(cached_value))
+    
+    # Проверка кэша для заголовка
+    cached_value = redis_client.get(f"site:{site}, slug:{slug}")
+    if cached_value:
+        data = json.loads(cached_value)
+    
+    # Проверка существования обработчика для указанного сайта
+    if site in site_handlers:
+        data = (await site_handlers[site]["title_info"](slug)).dict()
+        redis_client.set(f"site:{site}, slug:{slug}", json.dumps(data), ex=43200)
+    else:
+        raise HTTPException(status_code=404, detail="Site not found")
+
+    # Проверка существования обработчика для указанного сайта
+    if site in site_handlers:
+        images_data = (await site_handlers[site]["title_images"](data.get('id'), chapter_id)).dict()
+        redis_client.set(f"site:{site}, chapter_id:{chapter_id}", json.dumps(images_data), ex=43200)
+        return JSONResponse(content=images_data)
+    
+    raise HTTPException(status_code=404, detail="Site not found")
