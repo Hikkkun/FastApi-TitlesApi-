@@ -1,5 +1,3 @@
-version: '3.9'
-
 services:
   redis:
     image: redis:latest
@@ -48,6 +46,5 @@ services:
       - webnet
 
 networks:
-  default:
-    external:
-      name: webnet
+  webnet:
+    external: true

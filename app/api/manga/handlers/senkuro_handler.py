@@ -71,13 +71,19 @@ async def title_info(slug: str) -> MangaInfo:
                 for inner_content in content.get('content', [])
             ),
             title_name=next((item['content'] for item in data.get('titles', []) if item.get('lang') == 'RU'), None),
-            alternativeNames=", ".join(item['content'] for item in data.get('alternativeNames', [])),
-            chapters=data['chapters'],
-            status=data['status'],
-            translitionStatus=data['translitionStatus'],
-            branches=max(data['branches'], key=lambda x: x['chapters'])['id'],
-            genres=", ".join(item['titles'][0]['content'] for item in data.get('genres', [])),
-            tags=", ".join(item['titles'][0]['content'] for item in data.get('tags', [])),
+            alternativeNames = ", ".join(item['content'] for item in data.get('alternativeNames', [])),
+            chapters=data.get('chapters', 0),
+            status=data.get('status', ''),
+            translitionStatus=data.get('translitionStatus', ''),
+            branches=max(data.get('branches', ''), key=lambda x: x['chapters'])['id'],
+            genres = ", ".join(
+                next((t.get('content', '') for t in item.get('titles', [])), '')
+                for item in data.get('genres', [])
+            ),
+            tags = ", ".join(
+                next((t.get('content', '') for t in item.get('titles', [])), '')
+                for item in data.get('tags', [])
+            ),
             cover=data.get('cover', {}).get('original', {}).get('url', '')
         )
 
@@ -92,20 +98,19 @@ async def title_search(text: str) -> List[MangaSearch]:
     variables = {'query': text}
     response = await fetch({'query': query, 'variables': variables})
     
-    mangas_list = []
+    manga_list = []
     if response:
         for manga in response['data']['mangaTachiyomiSearch']['mangas']:
-            transformed_manga = MangaSearch(
+            manga_list.append(MangaSearch(
                 id=manga['id'],
                 slug=manga['slug'],
                 originalName=manga.get('originalName', {}).get('content', '').replace('"', '\''),
                 titles=next((title['content'].replace('"', '\'') for title in manga.get('titles', []) if title['lang'] == 'RU'), None),
-                alternativeNames=", ".join(name['content'].replace('"', '\'') for name in manga.get('alternativeNames', [])),
+                alternativeNames = ", ".join((name.get('content', '').replace('"', '\'') for name in manga.get('alternativeNames', []))),
                 cover=manga.get('cover', {}).get('original', {}).get('url')
-            )
-            mangas_list.append(transformed_manga.model_dump())
+            ).model_dump())
         
-    return mangas_list
+    return manga_list
 
 async def title_chapters(data: dict) -> List[MangaChapters]:
     query = '''
