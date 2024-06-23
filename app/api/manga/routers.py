@@ -37,7 +37,7 @@ async def title_info(slug: str, site: str = 'senkuro'):
 
     raise HTTPException(status_code=404, detail="Site not found")
 
-@router.get("/manga/{site}/search/", response_model=MangaSearch)
+@router.get("/api/manga/{site}/search/", response_model=MangaSearch)
 async def search_title(site: str, text: str):
     cached_value = redis_client.get(f"site:{site}, text:{text}")
     if cached_value:
@@ -50,7 +50,7 @@ async def search_title(site: str, text: str):
     
     raise HTTPException(status_code=404, detail="Site not found")
 
-@router.get("/{site}/chapters/{slug}", response_model=MangaChapters)
+@router.get("/api/manga/{site}/chapters/{slug}", response_model=MangaChapters)
 async def get_chapters(site: str, slug: str):
     cached_value = redis_client.get(f"site:{site}, slug:{slug}")
     if cached_value:
@@ -72,9 +72,9 @@ async def get_chapters(site: str, slug: str):
 
 @router.get("/api/manga/{site}/{slug}/{chapterId}", response_model=MangaImages)
 @router.get("/api/manga/{site}/images/{slug}/{chapterId}", response_model=MangaImages)
-async def get_images(site: str, slug: str, chapter_id: str):
+async def get_images(site: str, slug: str, chapterId: str):
     # Проверка кэша для изображения
-    cached_value = redis_client.get(f"site:{site}, chapter_id:{chapter_id}")
+    cached_value = redis_client.get(f"site:{site}, chapterId:{chapterId}")
     if cached_value:
         return JSONResponse(content=json.loads(cached_value))
     
@@ -92,8 +92,8 @@ async def get_images(site: str, slug: str, chapter_id: str):
 
     # Проверка существования обработчика для указанного сайта
     if site in site_handlers:
-        images_data = (await site_handlers[site]["title_images"](data.get('id'), chapter_id)).dict()
-        redis_client.set(f"site:{site}, chapter_id:{chapter_id}", json.dumps(images_data), ex=43200)
+        images_data = (await site_handlers[site]["title_images"](data.get('id'), chapterId)).dict()
+        redis_client.set(f"site:{site}, chapterId:{chapterId}", json.dumps(images_data), ex=43200)
         return JSONResponse(content=images_data)
     
     raise HTTPException(status_code=404, detail="Site not found")
