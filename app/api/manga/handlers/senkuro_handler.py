@@ -33,6 +33,10 @@ async def fetch(payload: dict) -> dict:
                 else:
                     logger.error(f"HTTP error: {e}")
                     raise e
+            except httpx.ConnectTimeout as e:
+                logger.error(f"Connection timeout: {e}")
+                retry_count += 1
+                await asyncio.sleep(0.5)
             except Exception as e:
                 logger.error(f"An error occurred: {e}")
                 raise e

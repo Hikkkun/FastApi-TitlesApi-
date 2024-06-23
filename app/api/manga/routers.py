@@ -1,4 +1,3 @@
-# app/api/manga/routers.py
 import json
 from fastapi import APIRouter, HTTPException
 from fastapi.responses import JSONResponse
@@ -19,13 +18,14 @@ site_handlers = {
     },
 }
 
-@router.get("/api/manga/{site_name}/title/{slug}", response_model=MangaInfo)
-@router.get("/api/manga/{site_name}/title/{slug}/{any}", response_model=MangaInfo)
+
+@router.get("/api/manga/{site}/title/{slug}", response_model=MangaInfo)
+@router.get("/api/manga/{site}/title/{slug}/{any}", response_model=MangaInfo)
 @router.get("/manga/{slug}", response_model=MangaInfo)
 @router.get("/manga/{slug}/{any}", response_model=MangaInfo)
 @router.get("/api/manga/{slug}", response_model=MangaInfo)
 @router.get("/api/manga/{slug}/{any}", response_model=MangaInfo)
-async def title_info(site: str, slug: str):
+async def title_info(slug: str, site: str = 'senkuro'):
     cached_value = redis_client.get(f"site:{site}, slug:{slug}")
     if cached_value:
         return JSONResponse(content=json.loads(cached_value))
@@ -70,8 +70,8 @@ async def get_chapters(site: str, slug: str):
     raise HTTPException(status_code=404, detail="Site not found")
 
 
-@router.get("/api/manga/{site_name}/{slug}/{chapterId}", response_model=MangaImages)
-@router.get("/api/manga/{site_name}/images/{slug}/{chapterId}", response_model=MangaImages)
+@router.get("/api/manga/{site}/{slug}/{chapterId}", response_model=MangaImages)
+@router.get("/api/manga/{site}/images/{slug}/{chapterId}", response_model=MangaImages)
 async def get_images(site: str, slug: str, chapter_id: str):
     # Проверка кэша для изображения
     cached_value = redis_client.get(f"site:{site}, chapter_id:{chapter_id}")

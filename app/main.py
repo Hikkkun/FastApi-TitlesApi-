@@ -7,8 +7,8 @@ from app.api.ranobe.routers import router as ranobe_router
 app = FastAPI()
 templates = Jinja2Templates(directory="templates")
 
-app.include_router(manga_router, prefix="/api", tags={"manga"})
-app.include_router(ranobe_router, prefix="/api", tags={"manga"})
+app.include_router(manga_router)
+app.include_router(ranobe_router)
 
 @app.get("/")
 def read_form(request: Request):
