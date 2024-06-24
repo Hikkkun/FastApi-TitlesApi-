@@ -7,7 +7,7 @@
 	<meta name="description" content="Manga Watcher X - О нас и на шей команде кто и когда был с нами и кто остался еще!">
 	<meta name="keywords" content="Manga Watcher, манга, комиксы, читать, Android, бесплатно, онлайн">
 	<meta name="viewport" content="width=device-width, initial-scale=1">
-	<title>Manga Watcher X -Senkuro обход</title>
+	<title>Manga Watcher X - Senkuro обход</title>
 	<link type="text/css" href="https://fonts.googleapis.com/css?family=Heebo:400,500,700|Playfair+Display:700" rel="stylesheet">
 	<link type="text/css" href="https://mwx.su/dist/css/bootstrap.min.css" rel="stylesheet">
 	<link type="text/css" rel="stylesheet" href="https://mwx.su/dist/css/style.css">
@@ -71,6 +71,10 @@
 
     /* Адаптивная верстка под телефон */
     @media (max-width: 600px) {
+        h2.section-title {
+            font-size: 1em;
+        }
+
         .textarea-container {
             flex-direction: column;
             align-items: stretch;
@@ -200,34 +204,7 @@
 	<!-- Bootstrap JS -->
 	<script src="https://mwx.su/dist/js/bootstrap.min.js"></script>
 	<script src="https://mwx.su/dist/js/main.min.js"></script>
-	<!--LiveInternet counter-->
-	<script type="text/javascript">
-	<!--
-	document.write("<a rel='nofollow' href='http://www.liveinternet.ru/click' " + "target=_blank><img src='//counter.yadro.ru/hit?t26.1;r" + escape(document.referrer) + ((typeof(screen) == "undefined") ? "" : ";s" + screen.width + "*" + screen.height + "*" + (screen.colorDepth ? screen.colorDepth : screen.pixelDepth)) + ";u" + escape(document.URL) + ";" + Math.random() + "' alt='' title='LiveInternet: показано число посетителей за" + " сегодня' " + "border='0' width='88' height='15'><\/a>")
-		//-->
-	</script>
-	<!--/LiveInternet-->
-	<!-- Yandex.Metrika counter -->
-	<script type="text/javascript">
-	(function(m, e, t, r, i, k, a) {
-		m[i] = m[i] || function() {
-			(m[i].a = m[i].a || []).push(arguments)
-		};
-		m[i].l = 1 * new Date();
-		k = e.createElement(t), a = e.getElementsByTagName(t)[0], k.async = 1, k.src = r, a.parentNode.insertBefore(k, a)
-	})
-	(window, document, "script", "https://mc.yandex.ru/metrika/tag.js", "ym");
-	ym(85223803, "init", {
-		clickmap: true,
-		trackLinks: true,
-		accurateTrackBounce: true
-	});
-	</script>
-	<noscript>
-		<div><img src="https://mc.yandex.ru/watch/85223803" style="position:absolute; left:-9999px;" alt="" /></div>
-	</noscript>
-	<!-- /Yandex.Metrika counter -->
-	<!-- VK Widget -->
+	
 	<script>
 	function processLinks() {
 		const inputArea = document.getElementById("inputArea");
@@ -258,13 +235,19 @@
 
 	function downloadLinks() {
 		const outputArea = document.getElementById("outputArea");
-		const links = outputArea.value;
+		const links = outputArea.value.trim();
+
+        if (links === "") {
+            alert("Пожалуйста, заполните поле с ссылками!");
+            return;
+        }
+
 		const blob = new Blob([links], {
 			type: "text/plain"
 		});
 		const url = URL.createObjectURL(blob);
 		const now = new Date();
-		const filename = `${now.getDate()}.${now.getMonth() + 1}.${now.getFullYear()} - ${now.getHours()}:${now.getMinutes()}:${now.getSeconds()}.txt`;
+		const filename = `${now.getDate()}-${now.getMonth() + 1}-${now.getFullYear()} ${now.getHours()}-${now.getMinutes()}-${now.getSeconds()}.txt`;
 		const a = document.createElement("a");
 		a.href = url;
 		a.download = filename;
